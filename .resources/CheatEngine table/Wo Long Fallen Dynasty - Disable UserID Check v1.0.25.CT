@@ -1,0 +1,868 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="45">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>104350</ID>
+      <Description>"*** Wo Long Fallen Dynasty ***"</Description>
+      <Options moHideChildren="1"/>
+      <Color>65D7FC</Color>
+      <GroupHeader>1</GroupHeader>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>104184</ID>
+      <Description>"[ACTIVATE ME]"</Description>
+      <Options moHideChildren="1" moDeactivateChildrenAsWell="1"/>
+      <Color>C7AFE2</Color>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+
+if syntaxcheck then return end
+
+-- SHARED FUNCTIONS
+function stopExec(s)
+  error(print(string.format("\r\n&gt;&gt; %s &lt;&lt;",s)))
+end
+
+function aobScanEx(aob)
+  -- thanks panraven for this function!
+  -- https://forum.cheatengine.org/viewtopic.php?t=577536
+  -- simplified for my needs
+  -- scan the entire memory space: e = nil or '*X*W'
+  -- scan only executable code: e = nil or '+X'
+  local p, a, n, s, e = nil or '+X', nil or fsmNotAligned, nil or '0', getAddress(process) or 0x0, (getAddress(process) + getModuleSize(process)) or 0xffffffffffffffff
+  local ms = pb and createMemScan( pb ) or createMemScan()
+  local fl = createFoundList( ms )
+  ms.firstScan( soExactValue, vtByteArray, nil, aob, nil, s, e, p, a, n, true, false, false, false )
+  ms.waitTillDone()
+  fl.initialize()
+  local result = nil
+  if fl ~= nil and fl.getCount() &gt; 0 then
+    result = createStringlist()
+    for i = 1, fl.getCount() do result.add( fl.getAddress( i - 1 ) ) end
+  end
+  fl.destroy()
+  ms.destroy()
+  return result
+end
+
+-- (address, pattern(optional))
+function DisassembleAndGetStaticAddr(a, p)
+  local p = p or "%[(.-)%]"
+  local opcode = getDefaultDisassembler().disassemble(a)
+  return opcode:match(p)
+end
+
+[ENABLE]
+
+-- VARIABLES
+local procName = "WoLong"
+local processName = procName..".exe"
+local ceLatestVer = 7.5 -- latest CE version number known to this cheat table.
+clr0 = 0xc7afe2 -- red
+clr1 = 0xc2ff93 -- green
+clr2 = 0xafe1e2 -- yellow
+local statmr = memrec.Child[0]
+
+-- CHECK CHEAT ENGINE VERSION
+local ceCurrentVer = getCEVersion() -- currently installed CE version number.
+if ceCurrentVer &lt; ceLatestVer then
+  messageDialog("Your Cheat Engine software is outdated and this table could not run properly.\nPlease consider updating to the latest Cheat Engine version. Latest official public release version is avilable at https://cheatengine.org/\nYour Cheat Engine Version : "..ceCurrentVer.."\nLatest Known Public Cheat Engine Version : "..ceLatestVer,0)
+  -- CLOSE MAIN FORM
+  -- MainForm.close() -- closes MainForm Window
+end
+
+-- AUTO ATTACH
+local autoAttachTimer = nil -- Variable to hold timer object
+local autoAttachTimerInterval = 1000 -- Timer intervals are in milliseconds. Default (1000 = 1 sec)
+local autoAttachTimerTicks = 0 -- Variable to count number of times the timer has run
+local autoAttachTimerTickMax = 120 -- Set to zero to disable ticks max. Default (120 secs)
+local function autoAttachTimer_tick(timer) -- Timer tick call back
+  -- Destroy timer if user disabled script
+  if memrec.Active then
+    memrec.Description = "("..autoAttachTimerTickMax-autoAttachTimerTicks.."s) [Waiting for "..processName.."...]"
+  else
+    timer.destroy() -- Destroy timer
+  end
+  -- Destroy timer if max ticks is reached
+  if autoAttachTimerTickMax &gt; 0 and autoAttachTimerTicks &gt;= autoAttachTimerTickMax then
+    timer.destroy() -- Destroy timer
+    -- SET CURRENT CONTROL DESCRIPTION
+    memrec.Description = "[DEACTIVATE ME AND TRY AGAIN]"
+    memrec.Color = clr0
+    statmr.Description = "???!!!???!!!"
+    statmr.Color = clr0
+  end
+  -- Check if process is running
+  if getProcessIDFromProcessName(processName) ~= nil then
+    timer.destroy()
+    openProcess(processName) -- Open the process
+
+    -- GET PROCESS VERSION
+    local exePath = enumModules()[1].PathToFile
+    procVer, pvTable = getFileVersion(exePath)
+    if pvTable == nil then
+      procVer = "v0"
+    else
+      procVer = "v"..pvTable.major.."."..pvTable.minor.."."..pvTable.release.."."..pvTable.build
+    end
+
+    -- SET CURRENT CONTROL DESCRIPTION
+    memrec.Description = "[ACTIVATED]"
+    memrec.Color = clr1
+    statmr.Description = procName.." "..procVer
+    statmr.Color = clr1
+
+    -- ENABLE ALL CHOSEN SCRIPTS
+    local cur_child
+    for i = 2,memrec.Count-1 do
+        cur_child = memrec.Child[i]
+        if type(cur_child.Child[0]) ~= "nil" then
+           cur_child.Child[0].Active = cur_child.Active
+        end
+    end
+
+    -- ALLOCATE V_TABLE
+    -- Allocate a 4096-byte block of memory in the target process
+    CT_WOLONG_VTABLE = allocateMemory(0x1000)
+    registerSymbol('CT_WOLONG_VTABLE',CT_WOLONG_VTABLE)
+    writeSmallInteger(CT_WOLONG_VTABLE,1911)
+    writeQword(CT_WOLONG_VTABLE+0x08,0x12345678)
+    writeQword(CT_WOLONG_VTABLE+0x10,0x12345678)
+    writeQword(CT_WOLONG_VTABLE+0x18,0x12345678)
+  end
+  autoAttachTimerTicks = autoAttachTimerTicks + 1 -- Increase ticks
+end
+
+autoAttachTimer = createTimer(getMainForm()) -- Create timer with the main form as it's parent
+autoAttachTimer.Interval = autoAttachTimerInterval -- Set timer interval
+autoAttachTimer.OnTimer = autoAttachTimer_tick -- Set timer tick call back
+
+-- SET CURRENT CONTROL DESCRIPTION
+memrec.Description = "..."
+memrec.Color = clr2
+statmr.Description = "..."
+statmr.Color = clr2
+
+
+[DISABLE]
+
+-- Free the allocated memory block
+deAlloc(CT_WOLONG_VTABLE)
+unregisterSymbol('CT_WOLONG_VTABLE')
+CT_WOLONG_VTABLE = nil
+
+-- SET CURRENT CONTROL DESCRIPTION
+memrec.Description = "[ACTIVATE ME]"
+memrec.Color = clr0
+-- NULLIFY ALL GLOBAL VARIABLES
+procVer, pvTable = nil, nil
+clr0, clr1, clr2 = nil, nil, nil
+autoAttachTimer = nil
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>104180</ID>
+          <Description>"WoLong v0"</Description>
+          <Options moAlwaysHideChildren="1" moActivateChildrenAsWell="1" moDeactivateChildrenAsWell="1"/>
+          <Color>C2FF93</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>104210</ID>
+              <Description>"Q3JlYXRlZCBieSBNaTVobWFzSA=="</Description>
+              <Options moActivateChildrenAsWell="1" moDeactivateChildrenAsWell="1"/>
+              <Color>C2FF94</Color>
+              <GroupHeader>1</GroupHeader>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>104228</ID>
+          <Description>"VVV Enable before launching the game if you want it to skip the userid check "</Description>
+          <Options moHideChildren="1"/>
+          <Color>B9D0E1</Color>
+          <GroupHeader>1</GroupHeader>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>104188</ID>
+          <Description>"DISABLE USER_ID CHECK"</Description>
+          <Options moHideChildren="1" moActivateChildrenAsWell="1" moDeactivateChildrenAsWell="1"/>
+          <Color>7EA9C9</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>104183</ID>
+              <Description>"&lt;- STATUS"</Description>
+              <Color>B9D0E1</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : WoLong.exe
+  Version: 1.09
+  Date   : 2023-06-16
+  Author : Mi5hmasH
+}
+
+[ENABLE]
+
+// AOB_SCAN
+aobscanmodule(AOB_STEAMID_CHECK,$process,39 * B0 00 00 00 74 * C7 * B4 00 00 00 08 00 00 00)
+// AOB_DEFINE
+define(STEAMID_CHECK,AOB_STEAMID_CHECK+6) //+6
+// AOB_SYMBOLS
+registersymbol(AOB_STEAMID_CHECK)
+registersymbol(STEAMID_CHECK)
+
+STEAMID_CHECK:
+  db EB // jmp
+
+
+[DISABLE]
+
+STEAMID_CHECK:
+  db 74 // je
+
+unregistersymbol(*)
+dealloc(*)
+
+{ ORIGINAL CODE
+WoLong.exe+11921FF: 4C 3B F0                       - cmp r14,rax
+WoLong.exe+1192202: 74 0C                          - je WoLong.exe+1192210
+WoLong.exe+1192204: C7 83 B4 00 00 00 07 00 00 00  - mov [rbx+000000B4],00000007
+WoLong.exe+119220E: EB 36                          - jmp WoLong.exe+1192246
+WoLong.exe+1192210: 8B 46 18                       - mov eax,[rsi+18]
+WoLong.exe+1192213: 48 39 83 F8 00 00 00           - cmp [rbx+000000F8],rax
+WoLong.exe+119221A: 73 0C                          - jae WoLong.exe+1192228
+WoLong.exe+119221C: C7 83 B4 00 00 00 07 00 00 00  - mov [rbx+000000B4],00000007
+WoLong.exe+1192226: EB 15                          - jmp WoLong.exe+119223D
+WoLong.exe+1192228: 8B 46 10                       - mov eax,[rsi+10]
+// ---------- INJECTING HERE ----------
+WoLong.exe+119222B: 39 83 B0 00 00 00              - cmp [rbx+000000B0],eax
+// ---------- DONE INJECTING  ----------
+WoLong.exe+1192231: 74 0A                          - je WoLong.exe+119223D
+WoLong.exe+1192233: C7 83 B4 00 00 00 08 00 00 00  - mov [rbx+000000B4],00000008
+WoLong.exe+119223D: 45 84 E4                       - test r12b,r12b
+WoLong.exe+1192240: 0F 85 78 01 00 00              - jne WoLong.exe+11923BE
+WoLong.exe+1192246: 8B 8B B4 00 00 00              - mov ecx,[rbx+000000B4]
+WoLong.exe+119224C: 85 C9                          - test ecx,ecx
+WoLong.exe+119224E: 0F 85 6A 01 00 00              - jne WoLong.exe+11923BE
+WoLong.exe+1192254: 48 8B 86 00 01 00 00           - mov rax,[rsi+00000100]
+WoLong.exe+119225B: 48 39 46 08                    - cmp [rsi+08],rax
+WoLong.exe+119225F: 74 0F                          - je WoLong.exe+1192270
+}
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>104232</ID>
+          <Description>"DISABLE CHECKSUM CHECK"</Description>
+          <Options moHideChildren="1" moActivateChildrenAsWell="1" moDeactivateChildrenAsWell="1"/>
+          <Color>7EA9C9</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>104353</ID>
+              <Description>"&lt;- STATUS"</Description>
+              <Color>B9D0E1</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : WoLong.exe
+  Version: 1.09
+  Date   : 2023-06-16
+  Author : Mi5hmasH
+}
+
+[ENABLE]
+
+// AOB_SCAN
+aobscanmodule(AOB_CALCULATE_CHECKSUM,$process,E8 * * * * 85 * 74 * C7 * B4 00 00 00 07 00 00 00)
+// AOB_DEFINE
+define(CHECKSUM_CHECK,AOB_CALCULATE_CHECKSUM+7) //+7
+// AOB_SYMBOLS
+registersymbol(AOB_CALCULATE_CHECKSUM)
+registersymbol(CHECKSUM_CHECK)
+
+CHECKSUM_CHECK:
+  db EB // jmp
+
+
+[DISABLE]
+
+CHECKSUM_CHECK:
+  db 74 // je
+
+unregistersymbol(*)
+dealloc(*)
+
+{ ORIGINAL CODE
+WoLong.exe+119236F: 48 89 85 B8 00 00 00           - mov [rbp+000000B8],rax
+WoLong.exe+1192376: 48 89 85 C0 00 00 00           - mov [rbp+000000C0],rax
+WoLong.exe+119237D: 48 89 85 C8 00 00 00           - mov [rbp+000000C8],rax
+WoLong.exe+1192384: 8B 56 18                       - mov edx,[rsi+18]
+WoLong.exe+1192387: 48 8D 8E 00 01 00 00           - lea rcx,[rsi+00000100]
+WoLong.exe+119238E: 4C 8D 85 B0 00 00 00           - lea r8,[rbp+000000B0]
+WoLong.exe+1192395: E8 06 F5 B9 FF                 - call WoLong.exe+D318A0
+WoLong.exe+119239A: 48 8D 4E 3C                    - lea rcx,[rsi+3C]
+WoLong.exe+119239E: 41 B8 20 00 00 00              - mov r8d,00000020
+WoLong.exe+11923A4: 48 8D 95 B0 00 00 00           - lea rdx,[rbp+000000B0]
+// ---------- INJECTING HERE ----------
+WoLong.exe+11923AB: E8 70 3A B2 00                 - call WoLong.exe+1CB5E20
+// ---------- DONE INJECTING  ----------
+WoLong.exe+11923B0: 85 C0                          - test eax,eax
+WoLong.exe+11923B2: 74 0A                          - je WoLong.exe+11923BE
+WoLong.exe+11923B4: C7 83 B4 00 00 00 07 00 00 00  - mov [rbx+000000B4],00000007
+WoLong.exe+11923BE: 83 BB B4 00 00 00 00           - cmp dword ptr [rbx+000000B4],00
+WoLong.exe+11923C5: 0F 85 EC 00 00 00              - jne WoLong.exe+11924B7
+WoLong.exe+11923CB: 45 84 E4                       - test r12b,r12b
+WoLong.exe+11923CE: 0F 84 92 00 00 00              - je WoLong.exe+1192466
+WoLong.exe+11923D4: 80 BB 5D 01 00 00 00           - cmp byte ptr [rbx+0000015D],00
+WoLong.exe+11923DB: 0F 85 E4 00 00 00              - jne WoLong.exe+11924C5
+WoLong.exe+11923E1: 41 83 FD 14                    - cmp r13d,14
+}
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>104233</ID>
+          <Description>"DISABLE SAVE ENCRYPTION"</Description>
+          <Options moHideChildren="1" moActivateChildrenAsWell="1" moDeactivateChildrenAsWell="1"/>
+          <Color>7EA9C9</Color>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>104234</ID>
+              <Description>"&lt;- STATUS"</Description>
+              <Color>B9D0E1</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : WoLong.exe
+  Version: 1.09
+  Date   : 2023-06-16
+  Author : Mi5hmasH
+}
+
+[ENABLE]
+
+// AOB_SCAN
+aobscanmodule(AOB_ENCRYPTION_JUMP1,$process,74 * 0F * * * * * * 0F * * * * * * 48 * * * 20 4C * * E8)
+aobscanmodule(AOB_ENCRYPTION_JUMP2,$process,74 * 0F * * * * * * 0F * * * * * * 48 * * * 20 44 * * 4C * * E8)
+aobscanmodule(AOB_DECRYPTION_JUMP1,$process,74 * 0F * * * * * * 0F * * * * * * 4D * * E8)
+aobscanmodule(AOB_DECRYPTION_JUMP2,$process,74 * 0F * * * * * * 0F * * * * * * 45 * * * * * * 4C * * E8)
+// AOB_DEFINE
+define(ENCRYPTION_CALL1,AOB_ENCRYPTION_JUMP1+18) //+24
+define(ENCRYPTION_CALL2,AOB_ENCRYPTION_JUMP2+1B) //+27
+define(DECRYPTION_CALL1,AOB_DECRYPTION_JUMP1+13) //+19
+define(DECRYPTION_CALL2,AOB_DECRYPTION_JUMP2+1A) //+26
+// AOB_SYMBOLS
+registersymbol(AOB_ENCRYPTION_JUMP1,AOB_ENCRYPTION_JUMP2,AOB_DECRYPTION_JUMP1,AOB_DECRYPTION_JUMP2)
+registersymbol(ENCRYPTION_CALL1,ENCRYPTION_CALL2,DECRYPTION_CALL1,DECRYPTION_CALL2)
+
+AOB_ENCRYPTION_JUMP1:
+  db EB // jmp
+
+AOB_ENCRYPTION_JUMP2:
+  db EB // jmp
+
+AOB_DECRYPTION_JUMP1:
+  db EB // jmp
+
+AOB_DECRYPTION_JUMP2:
+  db EB // jmp
+
+
+[DISABLE]
+
+AOB_ENCRYPTION_JUMP1:
+  db 74 // je
+
+AOB_ENCRYPTION_JUMP2:
+  db 74 // je
+
+AOB_DECRYPTION_JUMP1:
+  db 74 // je
+
+AOB_DECRYPTION_JUMP2:
+  db 74 // je
+
+unregistersymbol(*)
+dealloc(*)
+
+{ ORIGINAL CODE
+// AOB_ENCRYPTION_JUMP1
+WoLong.exe+D632CF: 83 FB 65              - cmp ebx,65
+WoLong.exe+D632D2: 72 D3                 - jb WoLong.exe+D632A7
+WoLong.exe+D632D4: 48 8B CE              - mov rcx,rsi
+WoLong.exe+D632D7: E8 C4 1F 00 00        - call WoLong.exe+D652A0
+WoLong.exe+D632DC: 48 8B CD              - mov rcx,rbp
+WoLong.exe+D632DF: E8 2C 1E 00 00        - call WoLong.exe+D65110
+WoLong.exe+D632E4: E8 17 97 F7 FF        - call WoLong.exe+CDCA00
+WoLong.exe+D632E9: 44 8B 4F 10           - mov r9d,[rdi+10]
+WoLong.exe+D632ED: 44 03 4F 14           - add r9d,[rdi+14]
+WoLong.exe+D632F1: 48 85 F6              - test rsi,rsi
+// ---------- INJECTING HERE ----------
+WoLong.exe+D632F4: 74 1B                 - je WoLong.exe+D63311
+// ---------- DONE INJECTING  ----------
+WoLong.exe+D632F6: 0F 10 05 B3 7B 15 01  - movups xmm0,[WoLong.exe+1EBAEB0]
+WoLong.exe+D632FD: 0F 11 05 74 95 C0 02  - movups [WoLong.exe+396C878],xmm0
+WoLong.exe+D63304: 48 89 74 24 20        - mov [rsp+20],rsi
+WoLong.exe+D63309: 4C 8B C6              - mov r8,rsi
+WoLong.exe+D6330C: E8 DF 92 F7 FF        - call WoLong.exe+CDC5F0
+WoLong.exe+D63311: 48 8B 05 90 19 BF 02  - mov rax,[WoLong.exe+3954CA8]
+WoLong.exe+D63318: 48 8B 88 F8 95 C0 00  - mov rcx,[rax+00C095F8]
+WoLong.exe+D6331F: 48 85 C9              - test rcx,rcx
+WoLong.exe+D63322: 74 06                 - je WoLong.exe+D6332A
+WoLong.exe+D63324: E8 87 13 FF FF        - call WoLong.exe+D546B0
+
+// AOB_ENCRYPTION_JUMP2
+WoLong.exe+1191CD7: 4D 8D 47 3C           - lea r8,[r15+3C]
+WoLong.exe+1191CDB: 48 8B CF              - mov rcx,rdi
+WoLong.exe+1191CDE: E8 BD FB B9 FF        - call WoLong.exe+D318A0
+WoLong.exe+1191CE3: 4D 8D 47 5C           - lea r8,[r15+5C]
+WoLong.exe+1191CE7: 41 8B 57 14           - mov edx,[r15+14]
+WoLong.exe+1191CEB: 49 8B CF              - mov rcx,r15
+WoLong.exe+1191CEE: E8 AD FB B9 FF        - call WoLong.exe+D318A0
+WoLong.exe+1191CF3: E8 08 AD B4 FF        - call WoLong.exe+CDCA00
+WoLong.exe+1191CF8: 48 8B 86 F8 00 00 00  - mov rax,[rsi+000000F8]
+WoLong.exe+1191CFF: 48 85 FF              - test rdi,rdi
+// ---------- INJECTING HERE ----------
+WoLong.exe+1191D02: 74 1E                 - je WoLong.exe+1191D22
+// ---------- DONE INJECTING  ----------
+WoLong.exe+1191D04: 0F 10 05 A5 91 D2 00  - movups xmm0,[WoLong.exe+1EBAEB0]
+WoLong.exe+1191D0B: 0F 11 05 66 AB 7D 02  - movups [WoLong.exe+396C878],xmm0
+WoLong.exe+1191D12: 48 89 7C 24 20        - mov [rsp+20],rdi
+WoLong.exe+1191D17: 44 8B C8              - mov r9d,eax
+WoLong.exe+1191D1A: 4C 8B C7              - mov r8,rdi
+WoLong.exe+1191D1D: E8 CE A8 B4 FF        - call WoLong.exe+CDC5F0
+WoLong.exe+1191D22: 8B BE B0 00 00 00     - mov edi,[rsi+000000B0]
+WoLong.exe+1191D28: 80 BE 60 01 00 00 00  - cmp byte ptr [rsi+00000160],00
+WoLong.exe+1191D2F: 0F 95 C1              - setne cl
+WoLong.exe+1191D32: E8 19 F9 FF FF        - call WoLong.exe+1191650
+
+// AOB_DECRYPTION_JUMP1
+WoLong.exe+D63547: 49 03 CF              - add rcx,r15
+WoLong.exe+D6354A: 48 8D 04 33           - lea rax,[rbx+rsi]
+WoLong.exe+D6354E: 48 3B C8              - cmp rcx,rax
+WoLong.exe+D63551: 77 4D                 - ja WoLong.exe+D635A0
+WoLong.exe+D63553: 83 7B 18 00           - cmp dword ptr [rbx+18],00
+WoLong.exe+D63557: 74 28                 - je WoLong.exe+D63581
+WoLong.exe+D63559: E8 A2 94 F7 FF        - call WoLong.exe+CDCA00
+WoLong.exe+D6355E: 44 8B 4B 14           - mov r9d,[rbx+14]
+WoLong.exe+D63562: 44 03 4B 10           - add r9d,[rbx+10]
+WoLong.exe+D63566: 4D 85 F6              - test r14,r14
+// ---------- INJECTING HERE ----------
+WoLong.exe+D63569: 74 16                 - je WoLong.exe+D63581
+// ---------- DONE INJECTING  ----------
+WoLong.exe+D6356B: 0F 10 05 3E 79 15 01  - movups xmm0,[WoLong.exe+1EBAEB0]
+WoLong.exe+D63572: 0F 11 05 0F 93 C0 02  - movups [WoLong.exe+396C888],xmm0
+WoLong.exe+D63579: 4D 8B C6              - mov r8,r14
+WoLong.exe+D6357C: E8 8F 92 F7 FF        - call WoLong.exe+CDC810
+WoLong.exe+D63581: 44 8B 43 08           - mov r8d,[rbx+08]
+WoLong.exe+D63585: 49 8B D6              - mov rdx,r14
+WoLong.exe+D63588: 48 8B 0D 19 17 BF 02  - mov rcx,[WoLong.exe+3954CA8]
+WoLong.exe+D6358F: E8 8C 0E 00 00        - call WoLong.exe+D64420
+WoLong.exe+D63594: 8B 53 0C              - mov edx,[rbx+0C]
+WoLong.exe+D63597: 49 8B CF              - mov rcx,r15
+
+// AOB_DECRYPTION_JUMP2
+WoLong.exe+1192124: 0F 84 77 03 00 00     - je WoLong.exe+11924A1
+WoLong.exe+119212A: 44 3B 74 24 58        - cmp r14d,[rsp+58]
+WoLong.exe+119212F: 0F 85 6C 03 00 00     - jne WoLong.exe+11924A1
+WoLong.exe+1192135: 33 C0                 - xor eax,eax
+WoLong.exe+1192137: 48 89 83 B4 00 00 00  - mov [rbx+000000B4],rax
+WoLong.exe+119213E: 38 46 38              - cmp [rsi+38],al
+WoLong.exe+1192141: 74 2E                 - je WoLong.exe+1192171
+WoLong.exe+1192143: 48 8D BE 00 01 00 00  - lea rdi,[rsi+00000100]
+WoLong.exe+119214A: E8 B1 A8 B4 FF        - call WoLong.exe+CDCA00
+WoLong.exe+119214F: 48 85 FF              - test rdi,rdi
+// ---------- INJECTING HERE ----------
+WoLong.exe+1192152: 74 1D                 - je WoLong.exe+1192171
+// ---------- DONE INJECTING  ----------
+WoLong.exe+1192154: 0F 10 05 55 8D D2 00  - movups xmm0,[WoLong.exe+1EBAEB0]
+WoLong.exe+119215B: 0F 11 05 26 A7 7D 02  - movups [WoLong.exe+396C888],xmm0
+WoLong.exe+1192162: 45 8D 8E 00 FF FF FF  - lea r9d,[r14-00000100]
+WoLong.exe+1192169: 4C 8B C7              - mov r8,rdi
+WoLong.exe+119216C: E8 9F A6 B4 FF        - call WoLong.exe+CDC810
+WoLong.exe+1192171: 49 81 C6 00 FF FF FF  - add r14,FFFFFFFFFFFFFF00
+WoLong.exe+1192178: 4C 8D 05 F5 AB 3F 01  - lea r8,[WoLong.exe+258CD74]
+WoLong.exe+119217F: 80 BB 5D 01 00 00 00  - cmp byte ptr [rbx+0000015D],00
+WoLong.exe+1192186: 48 8D 05 EF AB 3F 01  - lea rax,[WoLong.exe+258CD7C]
+WoLong.exe+119218D: 4C 0F 45 C0           - cmovne r8,rax
+}
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>104252</ID>
+          <Description>"*** GET ENCRYPTION KEYS"</Description>
+          <Options moHideChildren="1" moDeactivateChildrenAsWell="1"/>
+          <Color>808080</Color>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{ Game   : WoLong.exe
+  Version: 1.25
+  Date   : 2024-04-02
+  Author : Mi5hmasH
+}
+
+{$lua}
+
+if syntaxcheck then return end
+
+
+[ENABLE]
+
+-- GetHashTableAddress0
+local aob_GetHashTableAddress0 = "48 * * * 18 44 * * 0C 4C * * * * * * 44 * * 08"
+local aob_offset = 9
+local sl = aobScanEx(aob_GetHashTableAddress0)
+if not sl or sl.Count &lt; 1 then stopExec("'aob_GetHashTableAddress0' not found.") end
+local t = tonumber( sl[0], 16 )
+-- follow the call
+local getKeyAddress = getAddress(DisassembleAndGetStaticAddr(t+aob_offset))
+writeQword(CT_WOLONG_VTABLE+0x08,getKeyAddress)
+
+-- GetPrivateKeyAddress
+local aob_GetPrivateKeyAddress = "44 * * 10 44 * * 14 48 * * * * 0F"
+local aob_offset = 13
+local sl = aobScanEx(aob_GetPrivateKeyAddress)
+if not sl or sl.Count &lt; 1 then stopExec("'aob_GetPrivateKeyAddress' not found.") end
+local t = tonumber( sl[0], 16 )
+-- follow the call
+local getKeyAddress = getAddress(DisassembleAndGetStaticAddr(t+aob_offset))
+writeQword(CT_WOLONG_VTABLE+0x10,getKeyAddress)
+
+-- GetHashTableAddress1
+local aob_GetHashTableAddress1 = "48 * * 20 48 * * * * * * 4C * * E8 * * * * 44"
+local aob_offset = 4
+local sl = aobScanEx(aob_GetHashTableAddress1)
+if not sl or sl.Count &lt; 1 then stopExec("'aob_GetHashTableAddress1' not found.") end
+local t = tonumber( sl[0], 16 )
+-- follow the call
+local getKeyAddress = getAddress(DisassembleAndGetStaticAddr(t+aob_offset))
+writeQword(CT_WOLONG_VTABLE+0x18,getKeyAddress)
+
+
+[DISABLE]
+
+{$asm}
+</AssemblerScript>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>104340</ID>
+              <Description>"hashTableE0"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <ShowAsSigned>0</ShowAsSigned>
+              <Color>B9D0E1</Color>
+              <VariableType>Array of byte</VariableType>
+              <ByteLength>2048</ByteLength>
+              <Address>CT_WOLONG_VTABLE+8</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>104346</ID>
+              <Description>"hashTableD0"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <ShowAsSigned>0</ShowAsSigned>
+              <Color>B9D0E1</Color>
+              <VariableType>Array of byte</VariableType>
+              <ByteLength>2048</ByteLength>
+              <Address>CT_WOLONG_VTABLE+8</Address>
+              <Offsets>
+                <Offset>+800</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>104349</ID>
+              <Description>"privateKey"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <ShowAsSigned>0</ShowAsSigned>
+              <Color>B9D0E1</Color>
+              <VariableType>Array of byte</VariableType>
+              <ByteLength>16</ByteLength>
+              <Address>CT_WOLONG_VTABLE+10</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>104345</ID>
+              <Description>"hashTableE1"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <ShowAsSigned>0</ShowAsSigned>
+              <Color>B9D0E1</Color>
+              <VariableType>Array of byte</VariableType>
+              <ByteLength>176</ByteLength>
+              <Address>CT_WOLONG_VTABLE+18</Address>
+              <Offsets>
+                <Offset>4</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>104344</ID>
+              <Description>"hashTableD1"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <ShowAsSigned>0</ShowAsSigned>
+              <Color>B9D0E1</Color>
+              <VariableType>Array of byte</VariableType>
+              <ByteLength>176</ByteLength>
+              <Address>CT_WOLONG_VTABLE+18</Address>
+              <Offsets>
+                <Offset>104</Offset>
+              </Offsets>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>104165</ID>
+      <Description>"============================"</Description>
+      <Options moHideChildren="1"/>
+      <GroupHeader>1</GroupHeader>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>104171</ID>
+      <Description>"[COMPACT MODE]"</Description>
+      <Color>E2AFC7</Color>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+
+if syntaxcheck then return end
+
+[ENABLE]
+
+function cycleFullCompact( sender, force )
+  local state = not( compactmenuitem.Caption == 'Compact View Mode' )
+  if force ~= nil then
+    state = not force
+  end
+  compactmenuitem.Caption = state and 'Compact View Mode' or 'Full View Mode'
+  getMainForm().Splitter1.Visible = state
+  getMainForm().Panel4.Visible = state
+  getMainForm().Panel5.Visible = state
+end
+
+function addCompactMenu()
+  if compactmenualreadyexists then return end
+    local parent = getMainForm().Menu.Items
+    compactmenuitem = createMenuItem( parent )
+    parent.add( compactmenuitem )
+    compactmenuitem.Caption = 'Compact View Mode'
+    compactmenuitem.OnClick = cycleFullCompact
+    compactmenualreadyexists = 'yes'
+end
+
+  addCompactMenu()
+  cycleFullCompact( nil, true )
+
+
+[DISABLE]
+
+cycleFullCompact( nil, false )
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>104172</ID>
+      <Description>"❓ ABOUT ME"</Description>
+      <Color>CB7099</Color>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+
+if syntaxcheck then return end
+
+[ENABLE]
+
+-- OPEN TABLE EXTRAS (ABOUT)
+getMainForm().CommentButton.doClick()
+
+
+[DISABLE]
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>104163</ID>
+      <Description>"============================"</Description>
+      <Options moHideChildren="1"/>
+      <GroupHeader>1</GroupHeader>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>104193</ID>
+      <Description>"📁 Open SaveData Directory"</Description>
+      <Options moHideChildren="1"/>
+      <Color>A7D2FE</Color>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+
+if syntaxcheck then return end
+
+--- Check if a file or directory exists in this path
+function doesPathExists(path, severity)
+  -- Default values
+  severity = severity or false
+
+  local ok, err, code = os.rename(path, path)
+  if not ok then
+    if code == 13 then
+      -- Permission denied, but it exists
+      if severity then stopExec('Access permission denied. (err_code: '..code..')') end
+      return true
+    end
+    stopExec('Path "'..path..'" does not exist. (err_code: '..code..')')
+    return false
+  end
+  return true
+end
+
+
+[ENABLE]
+
+[DISABLE]
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>104348</ID>
+          <Description>"📁 Steam"</Description>
+          <Options moHideChildren="1"/>
+          <Color>A7D2FE</Color>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+
+if syntaxcheck then return end
+
+
+[ENABLE]
+
+local dir=os.getenv( 'USERPROFILE' )..'\\Documents\\KoeiTecmo\\Wolong\\Savedata'
+doesPathExists(dir)
+ShellExecute(dir)
+
+
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>104194</ID>
+          <Description>"📁 Microsoft Store"</Description>
+          <Options moHideChildren="1"/>
+          <Color>A7D2FE</Color>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+
+if syntaxcheck then return end
+
+
+[ENABLE]
+
+local dir=os.getenv( 'LOCALAPPDATA' )..'\\Packages\\946B6A6E.WoLongFallenDynasty_dkffhzhmh6pmy\\SystemAppData\\wgs'
+doesPathExists(dir)
+ShellExecute(dir)
+
+
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>104347</ID>
+      <Description>"============================"</Description>
+      <Options moHideChildren="1"/>
+      <GroupHeader>1</GroupHeader>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>104173</ID>
+      <Description>"🌎 Open Cheat Engine Download Page"</Description>
+      <Options moHideChildren="1"/>
+      <Color>ACAF41</Color>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+
+if syntaxcheck then return end
+
+[ENABLE]
+
+local link='https://www.cheatengine.org/'
+ShellExecute(link)
+memrec.Child[0].Description = link
+
+
+[DISABLE]
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>104174</ID>
+          <Description>"https://www.cheatengine.org/"</Description>
+          <Color>D6D894</Color>
+          <GroupHeader>1</GroupHeader>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>104351</ID>
+      <Description>"🌎 Open Steam Store Page"</Description>
+      <Options moHideChildren="1"/>
+      <Color>ACAF41</Color>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+
+if syntaxcheck then return end
+
+[ENABLE]
+
+local link='https://store.steampowered.com/app/1448440/Wo_Long_Fallen_Dynasty/'
+ShellExecute(link)
+memrec.Child[0].Description = link
+
+
+[DISABLE]
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>104352</ID>
+          <Description>"https://store.steampowered.com/app/1448440/Wo_Long_Fallen_Dynasty/"</Description>
+          <Color>D6D894</Color>
+          <GroupHeader>1</GroupHeader>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>104175</ID>
+      <Description>"🌎 Open Author's Github"</Description>
+      <Options moHideChildren="1"/>
+      <Color>ACAF41</Color>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+
+if syntaxcheck then return end
+
+[ENABLE]
+
+local link='https://github.com/mi5hmash'
+ShellExecute(link)
+memrec.Child[0].Description = link
+
+
+[DISABLE]
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>104176</ID>
+          <Description>"https://github.com/mi5hmash"</Description>
+          <Color>D6D894</Color>
+          <GroupHeader>1</GroupHeader>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+  <Comments>=======================================
+Game Title    : Wo Long Fallen Dynasty
+Platform      : STEAM
+Game Version  : 1.0.25.0
+Table Version : 1.0.0
+Cheat Engine  : 7.5
+Date          : 02/04/2024
+Author        : Mi5hmasH
+=======================================
+</Comments>
+</CheatTable>
