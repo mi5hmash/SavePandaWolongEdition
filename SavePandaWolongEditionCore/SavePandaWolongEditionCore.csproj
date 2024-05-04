@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<RootNamespace>SavePandaWolongEditionCore</RootNamespace>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<NeutralLanguage>en-US</NeutralLanguage>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<FileVersion>$(AssemblyVersion)</FileVersion>
+		<Version>$(AssemblyVersion)</Version>
+		<Authors>Mi5hmasH</Authors>
+		<Company>$(Authors)</Company>
+	</PropertyGroup>
+
+</Project>
