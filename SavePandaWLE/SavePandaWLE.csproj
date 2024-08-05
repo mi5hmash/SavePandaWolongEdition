@@ -1,6 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+		<!--DPIScalingFix-->
+		<ApplicationHighDpiMode>DpiUnawareGdiScaled</ApplicationHighDpiMode>
+		<!--Main-->
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net8.0-windows7.0</TargetFramework>
 		<RootNamespace>SavePandaWLE</RootNamespace>
@@ -9,16 +12,15 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<ApplicationIcon>icon.ico</ApplicationIcon>
 		<NeutralLanguage>en-US</NeutralLanguage>
-		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<AssemblyVersion>1.0.1.0</AssemblyVersion>
 		<FileVersion>$(AssemblyVersion)</FileVersion>
 		<Version>$(AssemblyVersion)</Version>
 		<Authors>Mi5hmasH</Authors>
 		<Company>$(Authors)</Company>
+		<Copyright>$(Authors) 2024</Copyright>
+		<PackageProjectUrl>https://github.com/mi5hmash/SavePandaWolongEdition</PackageProjectUrl>
+		<Description>Encrypt, Decrypt &amp; Resign WoLong SaveData files.</Description>
 	</PropertyGroup>
-
-	<ItemGroup>
-		<Content Include="icon.ico" />
-	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\SavePandaWolongEditionCore\SavePandaWolongEditionCore.csproj" />
