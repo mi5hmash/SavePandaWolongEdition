@@ -1,4 +1,6 @@
-﻿using System.IO.Compression;
+﻿// v2024-08-06 23:19:03
+
+using System.IO.Compression;
 using static SavePandaWolongEditionCore.Helpers.IoHelpers;
 
 namespace SavePandaWolongEditionCore.Helpers;
@@ -15,7 +17,7 @@ public class SimpleBackup
     /// A directory of a current backup.
     /// </summary>
     public string CurrentBackupDirectory { get; private set; }
-    
+
     /// <summary>
     /// Default constructor.
     /// </summary>
@@ -36,7 +38,7 @@ public class SimpleBackup
     /// Combines a path to a new backup folder. 
     /// </summary>
     /// <returns></returns>
-    private string NewBackupPath() 
+    private string NewBackupPath()
         => Path.Combine(_backupRootDirectory, $"{_backupFolderNamePrefix}_{DateTime.Now:yyyyMMddHHmmssfff}");
 
     /// <summary>
@@ -75,12 +77,12 @@ public class SimpleBackup
     public bool[] Backup(string[] filePaths)
     {
         var results = new bool[filePaths.Length];
-        for (var i = 0; i < filePaths.Length; i++) 
+        for (var i = 0; i < filePaths.Length; i++)
             results[i] = Backup(filePaths[i]);
 
         return results;
     }
-    
+
     /// <summary>
     /// Finalizes backup and packs it into a zip file if <see cref="_zipBackups"/> flag is true.
     /// </summary>
@@ -88,7 +90,7 @@ public class SimpleBackup
     {
         // check if directory exist or if backup is finalized
         if (!Directory.Exists(CurrentBackupDirectory) || _isFinalized) return;
-        
+
         var files = Directory.GetFiles(CurrentBackupDirectory);
         if (files.Length > 0)
         {

@@ -1,4 +1,6 @@
-﻿using static SavePandaWolongEditionCore.Helpers.IoHelpers;
+﻿// v2024-08-06 23:19:03
+
+using static SavePandaWolongEditionCore.Helpers.IoHelpers;
 
 namespace SavePandaWolongEditionCore.Helpers;
 
@@ -60,7 +62,7 @@ public class SimpleLogger(SimpleLoggerOptions options)
         Error,
         Critical
     }
-    
+
     /// <summary>
     /// Logger options.
     /// </summary>
@@ -75,14 +77,14 @@ public class SimpleLogger(SimpleLoggerOptions options)
     /// Determines if logging is enabled.
     /// </summary>
     public bool IsEnabled { get; set; }
-    
+
     /// <summary>
     /// Combines a path to a new log file. 
     /// </summary>
     /// <returns></returns>
-    private string NewCurrentLogFilePath() 
+    private string NewCurrentLogFilePath()
         => Path.Combine(_options.LogsRootDirectory, $"{_options.LogFileNamePrefix}_{DateTime.Now:yyyyMMddHHmmssfff}{LogFileExtension}");
-    
+
     /// <summary>
     /// Creates a folder for a new backup.
     /// </summary>
@@ -106,10 +108,10 @@ public class SimpleLogger(SimpleLoggerOptions options)
 
         // update the path to current log
         CurrentLogFilePath = NewCurrentLogFilePath();
-        
+
         // enable logging
         IsEnabled = true;
-        
+
         // append header to the log file
         SafelyAppendFile(CurrentLogFilePath, $"~~~ {_options.LoggedAppName} log file created with SimpleLogger v{Version} by Mi5hmasH. ~~~\n\n");
     }
@@ -121,8 +123,8 @@ public class SimpleLogger(SimpleLoggerOptions options)
     /// <param name="message"></param>
     public void Log(LogSeverity logSeverity, string message)
     {
-        if (logSeverity >= _options.MinSeverityLevel && IsEnabled) 
-            SafelyAppendFile(CurrentLogFilePath,$"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [{logSeverity.ToString().Left(3).ToUpper()}] {message}\n");
+        if (logSeverity >= _options.MinSeverityLevel && IsEnabled)
+            SafelyAppendFile(CurrentLogFilePath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [{logSeverity.ToString().Left(3).ToUpper()}] {message}\n");
     }
 
     /// <summary>

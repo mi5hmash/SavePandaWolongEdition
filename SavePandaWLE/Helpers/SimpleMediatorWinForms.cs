@@ -1,93 +1,95 @@
-﻿using SavePandaWolongEditionCore.Helpers;
+﻿// v2024-08-06 23:50:49
 
-namespace SavePandaWLE.Helpers
+using SavePandaWolongEditionCore.Helpers;
+using static SavePandaWolongEditionCore.Helpers.ISimpleMediator;
+
+namespace SavePandaWLE.Helpers;
+
+public class SimpleMediatorWinForms : ISimpleMediator
 {
-    public class SimpleMediatorWinForms : ISimpleMediator
+    /// <summary>
+    /// Default constructor.
+    /// </summary>
+    public SimpleMediatorWinForms() { }
+
+    /// <summary>
+    /// Translates <see cref="ISimpleMediator.QuestionOptions"/> to <see cref="MessageBoxButtons"/>
+    /// </summary>
+    /// <param name="questionOptions"></param>
+    /// <returns></returns>
+    private static MessageBoxButtons GetDialogOpt(QuestionOptions questionOptions)
     {
-        /// <summary>
-        /// Default constructor.
-        /// </summary>
-        public SimpleMediatorWinForms() { }
-
-        /// <summary>
-        /// Translates <see cref="ISimpleMediator.QuestionOptions"/> to <see cref="MessageBoxButtons"/>
-        /// </summary>
-        /// <param name="questionOptions"></param>
-        /// <returns></returns>
-        private static MessageBoxButtons GetDialogOpt(ISimpleMediator.QuestionOptions questionOptions)
+        return questionOptions switch
         {
-            return questionOptions switch
-            {
-                ISimpleMediator.QuestionOptions.OkCancel => MessageBoxButtons.OKCancel,
-                ISimpleMediator.QuestionOptions.AbortRetryIgnore => MessageBoxButtons.AbortRetryIgnore,
-                ISimpleMediator.QuestionOptions.YesNoCancel => MessageBoxButtons.YesNoCancel,
-                ISimpleMediator.QuestionOptions.YesNo => MessageBoxButtons.YesNo,
-                ISimpleMediator.QuestionOptions.RetryCancel => MessageBoxButtons.RetryCancel,
-                ISimpleMediator.QuestionOptions.CancelTryContinue => MessageBoxButtons.CancelTryContinue,
-                _ => MessageBoxButtons.OKCancel
-            };
-        }
+            QuestionOptions.OkCancel => MessageBoxButtons.OKCancel,
+            QuestionOptions.AbortRetryIgnore => MessageBoxButtons.AbortRetryIgnore,
+            QuestionOptions.YesNoCancel => MessageBoxButtons.YesNoCancel,
+            QuestionOptions.YesNo => MessageBoxButtons.YesNo,
+            QuestionOptions.RetryCancel => MessageBoxButtons.RetryCancel,
+            QuestionOptions.CancelTryContinue => MessageBoxButtons.CancelTryContinue,
+            _ => MessageBoxButtons.OKCancel
+        };
+    }
 
-        /// <summary>
-        /// Translates <see cref="ISimpleMediator.DialogType"/> to <see cref="MessageBoxIcon"/>
-        /// </summary>
-        /// <param name="dialogType"></param>
-        /// <returns></returns>
-        private static MessageBoxIcon GetDialogType(ISimpleMediator.DialogType dialogType)
+    /// <summary>
+    /// Translates <see cref="ISimpleMediator.DialogType"/> to <see cref="MessageBoxIcon"/>
+    /// </summary>
+    /// <param name="dialogType"></param>
+    /// <returns></returns>
+    private static MessageBoxIcon GetDialogType(DialogType dialogType)
+    {
+        return dialogType switch
         {
-            return dialogType switch
-            {
-                ISimpleMediator.DialogType.None => MessageBoxIcon.None,
-                ISimpleMediator.DialogType.Question => MessageBoxIcon.Question,
-                ISimpleMediator.DialogType.Exclamation => MessageBoxIcon.Exclamation,
-                ISimpleMediator.DialogType.Error => MessageBoxIcon.Error,
-                ISimpleMediator.DialogType.Warning => MessageBoxIcon.Warning,
-                ISimpleMediator.DialogType.Information => MessageBoxIcon.Information,
-                _ => MessageBoxIcon.None
-            };
-        }
+            DialogType.None => MessageBoxIcon.None,
+            DialogType.Question => MessageBoxIcon.Question,
+            DialogType.Exclamation => MessageBoxIcon.Exclamation,
+            DialogType.Error => MessageBoxIcon.Error,
+            DialogType.Warning => MessageBoxIcon.Warning,
+            DialogType.Information => MessageBoxIcon.Information,
+            _ => MessageBoxIcon.None
+        };
+    }
 
-        /// <summary>
-        /// Ask the user a simple question and get an answer.
-        /// </summary>
-        /// <param name="question"></param>
-        /// <param name="caption"></param>
-        /// <param name="questionOptions"></param>
-        /// <param name="dialogType"></param>
-        /// <returns></returns>
-        public ISimpleMediator.DialogAnswer Ask(string question, string caption, ISimpleMediator.QuestionOptions questionOptions, ISimpleMediator.DialogType dialogType)
+    /// <summary>
+    /// Ask the user a simple question and get an answer.
+    /// </summary>
+    /// <param name="question"></param>
+    /// <param name="caption"></param>
+    /// <param name="questionOptions"></param>
+    /// <param name="dialogType"></param>
+    /// <returns></returns>
+    public DialogAnswer Ask(string question, string caption, QuestionOptions questionOptions, DialogType dialogType)
+    {
+        var dlgOpt = GetDialogOpt(questionOptions);
+        var dlgType = GetDialogType(dialogType);
+
+        var dialogResult = MessageBox.Show(question, caption, dlgOpt, dlgType);
+
+        return dialogResult switch
         {
-            var dlgOpt = GetDialogOpt(questionOptions);
-            var dlgType = GetDialogType(dialogType);
+            DialogResult.None => DialogAnswer.None,
+            DialogResult.OK => DialogAnswer.Ok,
+            DialogResult.Cancel => DialogAnswer.Cancel,
+            DialogResult.Abort => DialogAnswer.Abort,
+            DialogResult.Retry => DialogAnswer.Retry,
+            DialogResult.Ignore => DialogAnswer.Ignore,
+            DialogResult.Yes => DialogAnswer.Yes,
+            DialogResult.No => DialogAnswer.No,
+            DialogResult.TryAgain => DialogAnswer.TryAgain,
+            DialogResult.Continue => DialogAnswer.Continue,
+            _ => DialogAnswer.None
+        };
+    }
 
-            var dialogResult = MessageBox.Show(question, caption, dlgOpt, dlgType);
-
-            return dialogResult switch
-            {
-                DialogResult.None => ISimpleMediator.DialogAnswer.None,
-                DialogResult.OK => ISimpleMediator.DialogAnswer.Ok,
-                DialogResult.Cancel => ISimpleMediator.DialogAnswer.Cancel,
-                DialogResult.Abort => ISimpleMediator.DialogAnswer.Abort,
-                DialogResult.Retry => ISimpleMediator.DialogAnswer.Retry,
-                DialogResult.Ignore => ISimpleMediator.DialogAnswer.Ignore,
-                DialogResult.Yes => ISimpleMediator.DialogAnswer.Yes,
-                DialogResult.No => ISimpleMediator.DialogAnswer.No,
-                DialogResult.TryAgain => ISimpleMediator.DialogAnswer.TryAgain,
-                DialogResult.Continue => ISimpleMediator.DialogAnswer.Continue,
-                _ => ISimpleMediator.DialogAnswer.None
-            };
-        }
-
-        /// <summary>
-        /// Send a message to the user.
-        /// </summary>
-        /// <param name="info"></param>
-        /// <param name="caption"></param>
-        /// <param name="dialogType"></param>
-        public void Inform(string info, string caption, ISimpleMediator.DialogType dialogType)
-        {
-            var dlgType = GetDialogType(dialogType);
-            MessageBox.Show(info, caption, MessageBoxButtons.OK, dlgType);
-        }
+    /// <summary>
+    /// Send a message to the user.
+    /// </summary>
+    /// <param name="info"></param>
+    /// <param name="caption"></param>
+    /// <param name="dialogType"></param>
+    public void Inform(string info, string caption, DialogType dialogType)
+    {
+        var dlgType = GetDialogType(dialogType);
+        MessageBox.Show(info, caption, MessageBoxButtons.OK, dlgType);
     }
 }
