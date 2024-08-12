@@ -149,7 +149,7 @@
             // 
             // pb_AppIcon
             // 
-            pb_AppIcon.Image = SavePandaWLE.Properties.Resources.SavePanda_Icon_x256;
+            pb_AppIcon.Image = Properties.Resources.SavePanda_Icon_x256;
             pb_AppIcon.Location = new Point(386, 10);
             pb_AppIcon.Name = "pb_AppIcon";
             pb_AppIcon.Size = new Size(112, 117);
@@ -285,7 +285,7 @@
             superUserTrigger.Click += SuperUserTrigger_Click;
             superUserTrigger.DoubleClick += SuperUserTrigger_Click;
             // 
-            // Form1
+            // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -311,7 +311,7 @@
             FormBorderStyle = FormBorderStyle.FixedSingle;
             Icon = (Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
-            Name = "Form1";
+            Name = "MainForm";
             Text = "SavePanda Wolong Edition";
             Load += Form1_Load;
             statusStrip1.ResumeLayout(false);
